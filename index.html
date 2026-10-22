@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模型库</title>
+<link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+  <aside class="rail">
+    <header class="rail-head">
+      <h1>模型库</h1>
+      <p class="rail-count" id="count">读取中</p>
+    </header>
+    <ul class="models" id="models"></ul>
+  </aside>
+
+  <main class="stage">
+    <div class="viewport">
+      <div class="shadow"></div>
+      <canvas id="gl"></canvas>
+    </div>
+    <footer class="plate">
+      <span class="plate-title" id="caption">—</span>
+      <span class="plate-tris" id="caption-tris"></span>
+      <span class="plate-hint">拖动可转到任意角度，松手继续自转</span>
+    </footer>
+  </main>
+
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>
