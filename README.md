@@ -6,12 +6,15 @@
 python3 serve.py          # → http://127.0.0.1:8777/
 ```
 
-页面左侧是模型清单（模型数 + 面数），点一个就在中间转起来：自动匀速自转，
-按住拖动可以转到任意角度，松手会甩一下再回到匀速。
+首页是 gallery：一张卡片一个模型，点开是全屏的 3D 详情——自动匀速自转，按住拖动
+可以转到任意角度，松手会甩一下再回到匀速，<kbd>←</kbd> <kbd>→</kbd> 换一个，
+<kbd>Esc</kbd> 关闭。地址栏的 `?m=<glb 路径>` 就是当前模型，可以直接分享。
 
 ## 在线预览
 
-https://thomaschan.github.io/blender-models/
+https://chenjunhao.cn/blender-models/
+
+（`thomaschan.github.io/blender-models/` 会 301 到上面这个地址：账号配了自定义域名。）
 
 页面是静态的：`viewer.js` 先请求本地 `serve.py` 的 `/api/models`，拿不到时回退到仓库里的
 `models.json`。所以加了 `.glb` 之后要跑一次 `python3 build_manifest.py`，否则线上清单
@@ -40,6 +43,11 @@ https://thomaschan.github.io/blender-models/
 
 线上 Pages 读的是提交进仓库的 `models.json`：加完模型跑一次
 `python3 build_manifest.py`；本地 `serve.py` 仍然是实时扫描。
+
+缩略图是可选的。一个文件夹放两个模型时，在各自的 sidecar 里写
+`"thumb": "kb-thumb.webp"`（见 `magickeys/`）；否则自动找文件夹里的
+`thumb.webp`、`preview-hero.png` 或 `preview-<名字>-hero.png`。gallery 只加载
+800px 的 WebP；没有缩略图时才会退回 1200px 的原始渲染图，一张就是 1.3 MB。
 
 ## macmini
 
@@ -407,6 +415,19 @@ USDZ 里的名字是哈希，换一个颜色导出就会变。
 - 出口闸门两件都 PASS：0 ngon、0 非流形、z_min 0.000；`--expect` 用实测值
   （279.52… / 57.25…），`--tol 0.1`。两个 GLB 各一件产品、原点居中；`.blend` 里鼠标
   挪到 x = 0.32 与键盘并排。
+
+## 给 agent 用
+
+预览页的 [`#agents`](https://chenjunhao.cn/blender-models/#agents) 有两段可以直接复制的指令：
+
+- **在前端项目里用模型**：让 agent 读 `models.json`（线上静态清单）或
+  `/api/models`（本地 `serve.py`），按 `url` 加载 GLB；清单是米制、Y-up。`macmini.glb`
+  用 meshopt 压缩，必须挂 `MeshoptDecoder`；金属材质必须给 `scene.environment`；
+  `fix` 非空的模型要按 `viewer.js` 的 `show()` 应用修正。GLB 不要改。
+- **安装建模技能**：把 `skills/blender-highpoly/` 复制到 `~/.agents/skills/`
+  （`~/.claude/skills/` 软链过去），然后按下面的出口闸门检查产物。
+
+`models.json` 和 `/api/models` 的字段一致：`title`、`url`、`thumb`、`tris`、`fix`。
 
 ## skills
 

@@ -1,32 +1,267 @@
 <!doctype html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>模型库</title>
+<title>blender-models — Apple 产品高精度模型库</title>
+<meta name="description" content="真实毫米尺寸的 Apple 产品 GLB 模型库：iMac、MacBook Pro、Mac mini、Mac Pro、Mac Studio、Magic Keyboard / Mouse。附 blender-highpoly 建模技能。">
+<meta name="theme-color" content="#07070a">
 <link rel="stylesheet" href="viewer.css">
 </head>
 <body>
-  <aside class="rail">
-    <header class="rail-head">
-      <h1>模型库</h1>
-      <p class="rail-count" id="count">读取中</p>
-    </header>
-    <ul class="models" id="models"></ul>
-  </aside>
+<a class="skip" href="#models">跳到模型</a>
 
-  <main class="stage">
-    <div class="viewport">
+<div class="ambient" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="top" id="top">
+  <a class="brand" href="./">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span>blender-models</span>
+  </a>
+  <nav class="top-nav" aria-label="页面导航">
+    <a href="#models">模型</a>
+    <a href="#usage">怎么用</a>
+    <a href="#agents">给 agent</a>
+    <a class="top-gh" href="https://github.com/ThomasChan/blender-models" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="pulse" aria-hidden="true"></span><span id="model-count">8 个模型</span> · 全部过导出闸门</p>
+      <h1>把 Apple 产品<br><em>搬进</em>你的页面</h1>
+      <p class="lede">真实毫米尺寸、真实开孔、可交互的 GLB。由 Blender 构建，或从 Apple 公开的 AR 资产转换——每个都过同一道检查脚本才准入库。</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#models">浏览模型 <span aria-hidden="true">↓</span></a>
+        <a class="btn" href="#agents">拿给 agent 用</a>
+      </div>
+      <dl class="stats">
+        <div><dt>模型</dt><dd>8</dd></div>
+        <div><dt>总面数</dt><dd>537<small>k</small></dd></div>
+        <div><dt>GLB 体积</dt><dd>24<small>MB</small></dd></div>
+        <div><dt>许可</dt><dd>见<small>页脚</small></dd></div>
+      </dl>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="hero-glow"></div>
+      <img src="imac27/preview-hero.png" alt="" width="1200" height="1200" fetchpriority="high">
+      <span class="hero-tag">iMac 27 · 650 × 519.7 × 203.4 mm</span>
+    </div>
+    <span class="scroll-cue" aria-hidden="true">SCROLL</span>
+  </section>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>iMac 24</span><i>◆</i><span>iMac 27</span><i>◆</i><span>MacBook Pro 14</span><i>◆</i><span>Mac mini</span><i>◆</i><span>Mac Pro</span><i>◆</i><span>Mac Studio</span><i>◆</i><span>Magic Keyboard</span><i>◆</i><span>Magic Mouse</span><i>◆</i>
+      <span>iMac 24</span><i>◆</i><span>iMac 27</span><i>◆</i><span>MacBook Pro 14</span><i>◆</i><span>Mac mini</span><i>◆</i><span>Mac Pro</span><i>◆</i><span>Mac Studio</span><i>◆</i><span>Magic Keyboard</span><i>◆</i><span>Magic Mouse</span><i>◆</i>
+    </div>
+  </div>
+
+  <section class="section" id="models">
+    <header class="section-head">
+      <p class="eyebrow">01 / 模型</p>
+      <h2>挑一个，转起来</h2>
+      <p>点卡片打开 3D 详情：拖动旋转，松手回到自转，<kbd>←</kbd> <kbd>→</kbd> 换一个，<kbd>Esc</kbd> 关闭。</p>
+    </header>
+    <div class="grid" id="grid" aria-live="polite"></div>
+  </section>
+
+  <section class="section" id="usage">
+    <header class="section-head">
+      <p class="eyebrow">02 / 怎么用</p>
+      <h2>三步，从看到用</h2>
+    </header>
+    <div class="steps">
+      <article class="step">
+        <span class="step-num">01</span>
+        <h3>在页面里看</h3>
+        <p>详情页是一个真的 WebGL 转台，不是视频。拖动可以停在任意角度，鼠标松手后回到匀速自转；地址栏的 <code>?m=</code> 参数就是当前模型，可以直接分享。</p>
+      </article>
+      <article class="step">
+        <span class="step-num">02</span>
+        <h3>在本地跑</h3>
+        <p><code>serve.py</code> 不带任何依赖，只做静态文件加 <code>/api/models</code>。往目录里丢一个 <code>.glb</code>，刷新就能看到，不需要先构建清单。</p>
+        <div class="snippet">
+          <div class="snippet-head"><span>terminal</span><button class="copy" data-copy>复制</button></div>
+          <pre><code>git clone https://github.com/ThomasChan/blender-models
+cd blender-models
+python3 serve.py            # http://127.0.0.1:8777/</code></pre>
+        </div>
+      </article>
+      <article class="step">
+        <span class="step-num">03</span>
+        <h3>加一个模型</h3>
+        <p>一个文件夹一个产品：<code>product.glb</code> + 同名 <code>product.json</code>（写 <code>title</code>）。线上读的是提交进仓库的 <code>models.json</code>，所以提交前要重建一次。</p>
+        <div class="snippet">
+          <div class="snippet-head"><span>terminal</span><button class="copy" data-copy>复制</button></div>
+          <pre><code>mkdir myproduct &amp;&amp; cp myproduct.glb myproduct/
+printf '{ "title": "My Product" }' &gt; myproduct/myproduct.json
+python3 build_manifest.py   # 本地 serve.py 会实时扫描，线上需要这一步</code></pre>
+        </div>
+        <p class="fine">缩略图可选：放一张 800px 的 <code>thumb.webp</code>；没有就用 <code>preview-hero.png</code>。gallery 不会去加载 1.3 MB 的原始渲染图。</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section section-agents" id="agents">
+    <header class="section-head">
+      <p class="eyebrow">03 / 给 agent 用</p>
+      <h2>把这两段<em>丢给 agent</em></h2>
+      <p>下面每一块都有复制按钮。第一段让 agent 在你的前端项目里接上这些模型；第二段把这套建模流程装进它的技能目录。</p>
+    </header>
+
+    <article class="agent-block">
+      <div class="agent-head">
+        <span class="step-num">01</span>
+        <h3>在前端项目里使用模型</h3>
+        <p>给 agent 的指令：</p>
+      </div>
+      <div class="snippet snippet-prompt">
+        <div class="snippet-head"><span>prompt</span><button class="copy" data-copy>复制</button></div>
+        <pre><code>在这个项目里用 https://chenjunhao.cn/blender-models/ 的模型。
+- 清单是 models.json，每项有 url / thumb / tris / fix；GLB 单位是米、Y 轴向上。
+- Pages 返回 Access-Control-Allow-Origin: *，可以直接跨域 fetch。
+- 用 three.js 的 GLTFLoader；macmini.glb 用了 EXT_meshopt_compression 和 KHR_mesh_quantization，
+  必须 loader.setMeshoptDecoder(MeshoptDecoder)，否则几何体加载不出来。
+- 金属材质没有环境贴图会发黑：给 scene.environment 一张 PMREM 过的环境。
+- renderer 用 THREE.NeutralToneMapping，toneMappingExposure = 1.25，和本页预览一致。
+- fix 非空的模型（目前只有 macmini）必须按 viewer.js 里 show() 的规则应用，否则会刻面、AO 错位。
+- 不要改 GLB；尺寸和每个模型的取舍写在 README 里。</code></pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-head"><span>three.js</span><button class="copy" data-copy>复制</button></div>
+        <pre><code>import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 1.25;
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+loader.load('https://chenjunhao.cn/blender-models/imac27/imac27.glb', gltf =&gt; {
+  scene.add(gltf.scene);          // 模型自身就在真实尺寸和原点附近
+});</code></pre>
+      </div>
+
+      <ul class="notes">
+        <li><strong>只有 Mac mini 需要 meshopt。</strong>其余模型是 Blender 直出的普通 GLB；统一挂上 decoder 不会有害。</li>
+        <li><strong>环境贴图不是可选项。</strong>这批模型的壳体和支架是金属，像素值全部来自反射；没有 <code>scene.environment</code> 时它们会渲染成深灰。</li>
+        <li><strong>别在 three.js 里重新归一化尺寸。</strong>GLB 已经是米制真实尺寸；本页的等比缩放只是为了转台好看，接进你的场景时按需要自己摆。</li>
+      </ul>
+    </article>
+
+    <article class="agent-block">
+      <div class="agent-head">
+        <span class="step-num">02</span>
+        <h3>安装并使用 blender-highpoly 技能</h3>
+        <p>这是一套给 agent 的建模流程：先查厂商有没有公开 USDZ，再决定转换还是手建；写完一个构建脚本，最后必须过导出闸门。</p>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-head"><span>terminal — 从仓库安装</span><button class="copy" data-copy>复制</button></div>
+        <pre><code>git clone https://github.com/ThomasChan/blender-models /tmp/blender-models
+mkdir -p ~/.agents/skills
+cp -R /tmp/blender-models/skills/blender-highpoly ~/.agents/skills/
+
+# Claude Code 读 ~/.claude/skills，软链过去即可
+mkdir -p ~/.claude/skills
+ln -sfn ~/.agents/skills/blender-highpoly ~/.claude/skills/blender-highpoly</code></pre>
+      </div>
+
+      <div class="snippet snippet-prompt">
+        <div class="snippet-head"><span>prompt</span><button class="copy" data-copy>复制</button></div>
+        <pre><code>用 blender-highpoly 这个 skill 给 &lt;产品&gt; 建一个高精度模型：
+- 真实毫米尺寸，常数全部从规格页抄下来再换算，不要用混合单位。
+- 只写一个构建脚本，顺序是几何 → 材质 → 灯 → 渲染 → 导出 → 保存 .blend。
+- 导出后用 ~/.agents/skills/blender-highpoly/scripts/check-model.py 过闸门，
+  --expect 填实测尺寸，--render 出至少两张预览；把 FAIL 当错，不要当警告。
+- 动手前先查这个产品有没有官方公开的 USDZ / glTF，有就转换，没有才手建。</code></pre>
+      </div>
+
+      <div class="snippet">
+        <div class="snippet-head"><span>terminal — 导出闸门</span><button class="copy" data-copy>复制</button></div>
+        <pre><code>/Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup \
+  --python-exit-code 1 \
+  --python ~/.agents/skills/blender-highpoly/scripts/check-model.py -- \
+  out/model.glb --expect 127,127,50 --render out/hero.png</code></pre>
+      </div>
+
+      <ul class="notes">
+        <li><strong>技能里有什么：</strong><code>SKILL.md</code> 是工作流和踩过的坑；<code>references/bpy.md</code> 是 Blender API 的单位表；<code>references/craft.md</code> 是尺寸与材质做法；<code>scripts/check-model.py</code> 会重新导入导出的 GLB，量尺寸、数 n-gon / 非流形、看曝光。</li>
+        <li><strong>闸门量的是导出的文件，不是内存里的场景。</strong>所以它抓得到导出选项、轴向、缩放这类“脚本里全对、文件里全错”的问题。</li>
+        <li><strong>它不判断像不像。</strong>识别度、构图、开孔是不是真的能看穿，仍然要靠人看渲染图——技能里把这条写成了硬规则。</li>
+      </ul>
+    </article>
+  </section>
+</main>
+
+<footer class="foot">
+  <div>
+    <span class="brand-mark" aria-hidden="true"></span>
+    <strong>blender-models</strong>
+    <p>Apple 产品高精度模型库 + blender-highpoly 技能。</p>
+  </div>
+  <nav aria-label="页脚链接">
+    <a href="https://github.com/ThomasChan/blender-models" target="_blank" rel="noreferrer">GitHub</a>
+    <a href="https://github.com/ThomasChan/blender-models/blob/main/README.md" target="_blank" rel="noreferrer">README</a>
+    <a href="https://github.com/ThomasChan/blender-models/blob/main/skills/blender-highpoly/SKILL.md" target="_blank" rel="noreferrer">SKILL.md</a>
+  </nav>
+  <p class="foot-legal">模型来自 Apple 公开 AR 资产的转换或按公开规格手工构建；Apple、iMac、MacBook 等名称与外观设计归 Apple Inc. 所有。仓库用于个人学习与演示，商用前请自行确认授权。</p>
+</footer>
+
+<dialog class="detail" id="detail" aria-labelledby="detail-title" tabindex="-1">
+  <div class="detail-shell">
+    <div class="detail-stage">
       <div class="shadow"></div>
       <canvas id="gl"></canvas>
+      <button class="detail-close" id="detail-close" aria-label="关闭详情">✕</button>
+      <p class="detail-hint">拖动旋转 · 松手自转 · <kbd>←</kbd><kbd>→</kbd> 换模型 · <kbd>Esc</kbd> 关闭</p>
     </div>
-    <footer class="plate">
-      <span class="plate-title" id="caption">—</span>
-      <span class="plate-tris" id="caption-tris"></span>
-      <span class="plate-hint">拖动可转到任意角度，松手继续自转</span>
-    </footer>
-  </main>
+    <aside class="detail-panel">
+      <p class="eyebrow" id="detail-index">MODEL</p>
+      <h2 id="detail-title">—</h2>
+      <p class="detail-tris" id="detail-tris">—</p>
+      <div class="detail-tags" id="detail-tags"></div>
 
-  <script type="module" src="viewer.js"></script>
+      <div class="detail-block">
+        <h3>引用地址</h3>
+        <div class="copy-row">
+          <code id="detail-url">—</code>
+          <button class="copy" data-copy="#detail-url">复制</button>
+        </div>
+      </div>
+
+      <div class="detail-block detail-fix" id="detail-fix" hidden>
+        <h3>需要 fix</h3>
+        <p>这个模型带转换修正（刻面角度、AO 通道、法线强度）。直接加载会显得刻面、AO 错位；规则见 <code>viewer.js</code> 的 <code>show()</code>。</p>
+      </div>
+
+      <div class="detail-block">
+        <h3>模型信息</h3>
+        <dl class="detail-facts">
+          <div><dt>格式</dt><dd>glTF 2.0 binary</dd></div>
+          <div><dt>单位</dt><dd>米 · Y 轴向上</dd></div>
+          <div><dt>跨域</dt><dd>Access-Control-Allow-Origin: *</dd></div>
+        </dl>
+      </div>
+
+      <div class="detail-nav">
+        <button id="detail-prev">← 上一个</button>
+        <button id="detail-next">下一个 →</button>
+      </div>
+      <a class="detail-download" id="detail-download" href="#">下载 GLB <span aria-hidden="true">↗</span></a>
+    </aside>
+  </div>
+</dialog>
+
+<script type="module" src="viewer.js"></script>
 </body>
 </html>

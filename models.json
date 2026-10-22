@@ -2,24 +2,28 @@
   {
     "title": "iMac 24英寸 M4 银色",
     "url": "imac/imac.glb",
+    "thumb": "imac/thumb.webp",
     "tris": 66331,
     "fix": {}
   },
   {
     "title": "iMac (27-inch, 2020)",
     "url": "imac27/imac27.glb",
+    "thumb": "imac27/thumb.webp",
     "tris": 27260,
     "fix": {}
   },
   {
     "title": "MacBook Pro 14英寸 M4",
     "url": "macbookpro/macbookpro.glb",
+    "thumb": "macbookpro/thumb.webp",
     "tris": 55063,
     "fix": {}
   },
   {
     "title": "Mac mini M4",
     "url": "macmini/macmini.glb",
+    "thumb": "macmini/thumb.webp",
     "tris": 73710,
     "fix": {
       "crease": 60,
@@ -33,24 +37,28 @@
   {
     "title": "Mac Pro",
     "url": "macpro/macpro.glb",
+    "thumb": "macpro/thumb.webp",
     "tris": 153974,
     "fix": {}
   },
   {
     "title": "Mac Studio",
     "url": "macstudio/macstudio.glb",
+    "thumb": "macstudio/thumb.webp",
     "tris": 69018,
     "fix": {}
   },
   {
     "title": "Magic Keyboard (2024, Touch ID)",
     "url": "magickeys/magic-keyboard.glb",
+    "thumb": "magickeys/kb-thumb.webp",
     "tris": 79901,
     "fix": {}
   },
   {
     "title": "Magic Mouse (2024, USB-C)",
     "url": "magickeys/magic-mouse.glb",
+    "thumb": "magickeys/ms-thumb.webp",
     "tris": 11732,
     "fix": {}
   }
