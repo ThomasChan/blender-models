@@ -1,0 +1,9 @@
+{
+  "title": "Mac mini M4",
+  "fix": {
+    "crease": 60,
+    "aoChannel": 0,
+    "normalScale": 0.2,
+    "mirror": ["PaletteMaterial005"]
+  }
+}
