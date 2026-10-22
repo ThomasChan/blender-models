@@ -259,6 +259,7 @@ loader.setMeshoptDecoder(MeshoptDecoder);
 
 let current = null;
 let anim = null;
+let loadSeq = 0;   // arrow-key browsing can start a second load before the first lands
 
 // The one place this viewer plays what the exporter baked. three-slim has no
 // AnimationMixer and does not need one: the clips come out sampled once per frame --
@@ -327,12 +328,15 @@ function dispose(root) {
 function show(entry) {
   if (current) { device.remove(current); dispose(current); current = null; }
   anim = null;
+  const seq = ++loadSeq;
   const fix = entry.fix || {};
   const crease = fix.crease ? (fix.crease * Math.PI) / 180 : 0;
   const creased = new Map();
   const seen = new Set();
 
   loader.load(entry.url, gltf => {
+    // A newer selection won the race; this scene was never shown.
+    if (seq !== loadSeq) { dispose(gltf.scene); return; }
     const root = gltf.scene;
 
     const box = new Box3().setFromObject(root);
@@ -397,13 +401,19 @@ let tilt = TILT0;
 let spin = reduce ? 0 : AUTO;
 let unitsPerPx = 0.97;
 let paused = false;
+let open = false;   // the detail dialog; no point rendering a hidden canvas
 
 const dragging = { on: false, id: -1, x: 0, y: 0, t: 0, avel: 0 };
 const cur = { scale: 0 };
 
 function resize() {
-  const w = canvas.clientWidth || 1;
-  const h = canvas.clientHeight || 1;
+  // A closed <dialog> lays the canvas out at 0x0. Calibrating unitsPerPx from that
+  // makes the first frame after opening compute a model thousands of pixels wide
+  // (it then has to ease back). Keep the last good calibration until there is a
+  // real size to measure.
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  if (!w || !h) return;
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
@@ -417,43 +427,52 @@ const ease = (a, b, rate, dt) => (reduce ? b : a + (b - a) * Math.min(1, dt * ra
 
 let prev = performance.now();
 function frame(now) {
-  const dt = Math.min(0.05, (now - prev) / 1000);
+  // An rAF timestamp can predate the performance.now() taken when the dialog opened,
+  // and a negative dt makes the ease() overshoot: a scale of -2.25 mirrored the model
+  // and sized it 750px instead of 460. Never let time run backwards.
+  const dt = Math.max(0, Math.min(0.05, (now - prev) / 1000));
   prev = now;
 
-  // The model is sized as a fraction of the stage, never in pixels. The clamp it used
-  // to have (30% of the width, floor 240, ceiling 560) pinned it at 560 on a 3840x2160
-  // display -- a stamp in the middle of a 4K field. 0.42 / 0.60 is the proportion that
-  // looked right at 1440x860, kept as a ratio so it holds at any size.
-  const vw = canvas.clientWidth || 1;
-  const vh = canvas.clientHeight || 1;
-  const target = Math.max(180, Math.min(vw * 0.42, vh * 0.6));
-  cur.scale = ease(cur.scale, (target * unitsPerPx) / W, 5.0, dt);
+  // Nothing on this canvas is visible while the dialog is closed; skip the whole
+  // update so the gallery idles at zero GPU work.
+  if (open) {
+    // The model is sized as a fraction of the stage, never in pixels. The clamp it used
+    // to have (30% of the width, floor 240, ceiling 560) pinned it at 560 on a 3840x2160
+    // display -- a stamp in the middle of a 4K field. Fractions keep it proportional at
+    // any size. W is the model's *longest* side, so the height cap is the one that
+    // matters for tall machines (Mac Pro); 0.68 / 0.66 fills the modal stage without
+    // touching its edges, and still gives a phone-sized stage a usable 265px subject.
+    const vw = canvas.clientWidth || 1;
+    const vh = canvas.clientHeight || 1;
+    const target = Math.max(200, Math.min(vw * 0.68, vh * 0.56));
+    cur.scale = ease(cur.scale, (target * unitsPerPx) / W, 5.0, dt);
 
-  // The blob under the model is HTML, so it has to be told how big the model got --
-  // otherwise it stays 360px wide under a 1200px machine. 0.83 / 0.7 / 0.35 / 0.06 are
-  // the numbers the fixed CSS used at 1440, expressed against the model instead.
-  const px = (W * cur.scale) / unitsPerPx;
-  blob.style.width = `${px * 0.83}px`;
-  blob.style.height = `${px * 0.7}px`;
-  blob.style.transform = `translate(-50%, -50%) translateY(${px * 0.35}px)`;
-  blob.style.filter = `blur(${px * 0.06}px)`;
+    // The blob under the model is HTML, so it has to be told how big the model got --
+    // otherwise it stays 360px wide under a 1200px machine. 0.83 / 0.7 / 0.35 / 0.06 are
+    // the numbers the fixed CSS used at 1440, expressed against the model instead.
+    const px = (W * cur.scale) / unitsPerPx;
+    blob.style.width = `${px * 0.83}px`;
+    blob.style.height = `${px * 0.7}px`;
+    blob.style.transform = `translate(-50%, -50%) translateY(${px * 0.35}px)`;
+    blob.style.filter = `blur(${px * 0.06}px)`;
 
-  if (!dragging.on && !paused) {
-    if (Math.abs(spin) > AUTO) {
-      spin *= Math.pow(0.22, dt);        // momentum bleeds off over a second or two
-    } else {
-      spin += (AUTO - spin) * Math.min(1, dt * 2.2);
+    if (!dragging.on && !paused) {
+      if (Math.abs(spin) > AUTO) {
+        spin *= Math.pow(0.22, dt);        // momentum bleeds off over a second or two
+      } else {
+        spin += (AUTO - spin) * Math.min(1, dt * 2.2);
+      }
+      rotY += spin * dt;
+      tilt = ease(tilt, TILT0, 3.2, dt);   // tilt springs back; yaw keeps wherever you left it
     }
-    rotY += spin * dt;
-    tilt = ease(tilt, TILT0, 3.2, dt);   // tilt springs back; yaw keeps wherever you left it
+
+    pivot.rotation.x = (tilt * Math.PI) / 180;
+    device.rotation.y = rotY;
+    device.scale.setScalar(cur.scale);
+    runAnim(dt);
+
+    renderer.render(scene, camera);
   }
-
-  pivot.rotation.x = (tilt * Math.PI) / 180;
-  device.rotation.y = rotY;
-  device.scale.setScalar(cur.scale);
-  runAnim(dt);
-
-  renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -494,26 +513,150 @@ function release(e) {
 canvas.addEventListener('pointerup', release);
 canvas.addEventListener('pointercancel', release);
 
-// --- the list ------------------------------------------------------------
-const ul = document.getElementById('models');
-const countEl = document.getElementById('count');
-const caption = document.getElementById('caption');
-const captionTris = document.getElementById('caption-tris');
-const faces = n => (n ? `${n.toLocaleString('en-US')} 面` : '');
-let shown = null;
+// --- the gallery ---------------------------------------------------------
+const grid = document.getElementById('grid');
+const countEl = document.getElementById('model-count');
+const dialog = document.getElementById('detail');
+const dClose = document.getElementById('detail-close');
+const dIndex = document.getElementById('detail-index');
+const dTitle = document.getElementById('detail-title');
+const dTris = document.getElementById('detail-tris');
+const dTags = document.getElementById('detail-tags');
+const dUrl = document.getElementById('detail-url');
+const dFix = document.getElementById('detail-fix');
+const dPrev = document.getElementById('detail-prev');
+const dNext = document.getElementById('detail-next');
+const dDownload = document.getElementById('detail-download');
 
-function select(entry, push = true) {
-  if (!entry || entry.url === shown) return;
-  shown = entry.url;
-  for (const a of ul.querySelectorAll('a')) {
-    a.setAttribute('aria-current', String(a.dataset.url === shown));
+const faces = n => (n ? `${n.toLocaleString('en-US')} 面` : '—');
+const pad = n => String(n).padStart(2, '0');
+let shownEntry = null;
+let pushedEntry = false;
+
+function card(entry, i) {
+  const a = document.createElement('a');
+  a.className = 'card';
+  a.href = `?m=${encodeURIComponent(entry.url)}`;
+  a.setAttribute('aria-label', `打开 ${entry.title} 的 3D 详情`);
+  a.style.setProperty('--d', `${Math.min(i, 7) * 55}ms`);
+
+  const media = document.createElement('div');
+  media.className = 'card-media';
+  if (entry.thumb) {
+    const img = document.createElement('img');
+    img.src = entry.thumb;
+    img.alt = '';
+    img.loading = i < 4 ? 'eager' : 'lazy';
+    img.decoding = 'async';
+    media.append(img);
   }
-  document.title = `${entry.title} · 模型库`;
-  caption.textContent = entry.title;
-  captionTris.textContent = faces(entry.tris);
-  if (push) history.pushState(null, '', `?m=${encodeURIComponent(entry.url)}`);
-  show(entry);
+
+  const meta = document.createElement('div');
+  meta.className = 'card-meta';
+  const num = document.createElement('span');
+  num.className = 'card-num';
+  num.textContent = pad(i + 1);
+  const title = document.createElement('span');
+  title.className = 'card-title';
+  title.textContent = entry.title;
+  const tris = document.createElement('span');
+  tris.className = 'card-tris';
+  tris.textContent = faces(entry.tris);
+  meta.append(num, title, tris);
+
+  const go = document.createElement('span');
+  go.className = 'card-go';
+  go.textContent = '打开';
+  go.setAttribute('aria-hidden', 'true');
+
+  a.append(media, meta, go);
+  a.addEventListener('click', ev => {
+    // A modified click is a request for a new tab; the href is a working deep link.
+    if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey || ev.button !== 0) return;
+    ev.preventDefault();
+    openEntry(entry, { push: true });
+  });
+  return a;
 }
+
+function fillPanel(entry) {
+  const i = entries.indexOf(entry);
+  dIndex.textContent = `MODEL ${pad(i + 1)} / ${pad(entries.length)}`;
+  dTitle.textContent = entry.title;
+  dTris.textContent = entry.tris ? `${entry.tris.toLocaleString('en-US')} 三角面` : '—';
+  dTags.replaceChildren();
+  for (const tag of ['GLB', 'Y-up', '1 unit = 1 m', 'CORS *']) {
+    const s = document.createElement('span');
+    s.textContent = tag;
+    dTags.append(s);
+  }
+  dUrl.textContent = new URL(entry.url, location.href).href;
+  dFix.hidden = !Object.keys(entry.fix || {}).length;
+  dDownload.href = entry.url;
+  dDownload.setAttribute('download', entry.url.split('/').pop());
+}
+
+function openEntry(entry, { push = false } = {}) {
+  if (!entry) return;
+  shownEntry = entry;
+  fillPanel(entry);
+
+  if (!dialog.open) {
+    dialog.showModal();
+    dialog.focus();                 // showModal() otherwise lands on the close button
+    open = true;
+    document.body.classList.add('detail-open');
+    resize();                       // showModal forces layout, so this measures the real stage
+  }
+  show(entry);
+  document.title = `${entry.title} · blender-models`;
+
+  const url = `?m=${encodeURIComponent(entry.url)}`;
+  if (push) {
+    history.pushState({ model: entry.url }, '', url);
+    pushedEntry = true;
+  } else {
+    history.replaceState({ model: entry.url }, '', url);
+  }
+}
+
+function requestClose() {
+  if (!dialog.open) return;
+  // If opening the dialog added a history entry, closing should consume it rather
+  // than leave the back button pointing at a model nobody is looking at.
+  if (pushedEntry) { history.back(); return; }
+  dialog.close();
+}
+
+function step(delta) {
+  if (!shownEntry || !entries.length) return;
+  const i = entries.indexOf(shownEntry);
+  openEntry(entries[(i + delta + entries.length) % entries.length]);
+}
+
+dClose.addEventListener('click', requestClose);
+dPrev.addEventListener('click', () => step(-1));
+dNext.addEventListener('click', () => step(1));
+dialog.addEventListener('cancel', ev => { ev.preventDefault(); requestClose(); });
+dialog.addEventListener('click', ev => { if (ev.target === dialog) requestClose(); });
+dialog.addEventListener('keydown', ev => {
+  if (ev.key === 'ArrowLeft') { ev.preventDefault(); step(-1); }
+  if (ev.key === 'ArrowRight') { ev.preventDefault(); step(1); }
+});
+dialog.addEventListener('close', () => {
+  open = false;
+  document.body.classList.remove('detail-open');
+  document.title = 'blender-models — Apple 产品高精度模型库';
+  pushedEntry = false;
+  if (location.search) history.replaceState(null, '', location.pathname);
+});
+
+addEventListener('popstate', () => {
+  const want = new URLSearchParams(location.search).get('m');
+  const entry = entries.find(e => e.url === want);
+  if (entry) { pushedEntry = false; openEntry(entry); }
+  else if (dialog.open) dialog.close();
+});
 
 // GitHub Pages is static: there is no /api/models, so fall back to the manifest
 // committed by build_manifest.py. Locally the live index stays authoritative, so
@@ -523,41 +666,68 @@ const entries = await fetch('api/models')
   .catch(() => fetch('models.json').then(r => r.json()));
 countEl.textContent = entries.length ? `${entries.length} 个模型` : '还没有模型';
 
-for (const entry of entries) {
-  const a = document.createElement('a');
-  a.href = `?m=${encodeURIComponent(entry.url)}`;
-  a.dataset.url = entry.url;
-  const row = document.createElement('span');
-  row.className = 'row';
-  const title = document.createElement('span');
-  title.className = 'row-title';
-  title.textContent = entry.title;
-  const tris = document.createElement('span');
-  tris.className = 'row-tris';
-  tris.textContent = faces(entry.tris) || '—';
-  row.append(title, tris);
-  a.append(row);
-  a.addEventListener('click', ev => { ev.preventDefault(); select(entry); });
-  const li = document.createElement('li');
-  li.append(a);
-  ul.append(li);
-}
-if (!entries.length) {
-  const li = document.createElement('li');
-  li.className = 'empty';
-  li.textContent = '把导出的 .glb 放进这个目录下的任意文件夹，刷新即可。';
-  ul.append(li);
+if (entries.length) {
+  const io = 'IntersectionObserver' in window
+    ? new IntersectionObserver((rows, obs) => {
+        for (const r of rows) {
+          if (!r.isIntersecting) continue;
+          r.target.classList.add('in');
+          obs.unobserve(r.target);
+        }
+      }, { threshold: .12, rootMargin: '0px 0px -6% 0px' })
+    : null;
+  entries.forEach((entry, i) => {
+    const a = card(entry, i);
+    grid.append(a);
+    if (io) io.observe(a); else a.classList.add('in');
+  });
+} else {
+  const empty = document.createElement('p');
+  empty.className = 'card-empty';
+  empty.textContent = '把导出的 .glb 放进这个目录下的任意文件夹，刷新即可。';
+  grid.append(empty);
 }
 
-addEventListener('popstate', () => {
-  const want = new URLSearchParams(location.search).get('m');
-  select(entries.find(e => e.url === want) || entries[0], false);
+// Deep link: ?m=imac27/imac27.glb opens that model straight away.
+const initial = entries.find(e => e.url === qs.get('m'));
+if (initial) openEntry(initial);
+
+// --- page chrome ---------------------------------------------------------
+const top = document.getElementById('top');
+const onScroll = () => top.classList.toggle('scrolled', scrollY > 24);
+addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+
+// The card's radial highlight follows the pointer; one delegated listener rather
+// than eight, and only the hovered card is touched.
+grid.addEventListener('pointermove', ev => {
+  const el = ev.target.closest('.card');
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  el.style.setProperty('--mx', `${ev.clientX - r.left}px`);
+  el.style.setProperty('--my', `${ev.clientY - r.top}px`);
 });
 
-select(entries.find(e => e.url === qs.get('m')) || entries[0], false);
+for (const btn of document.querySelectorAll('.copy')) {
+  btn.addEventListener('click', async () => {
+    const target = btn.dataset.copy;
+    const text = (target ? document.querySelector(target)?.textContent
+                         : btn.closest('.snippet')?.querySelector('pre code')?.textContent) || '';
+    const label = btn.textContent;
+    try {
+      await navigator.clipboard.writeText(text.trim());
+      btn.textContent = '已复制';
+      btn.classList.add('done');
+    } catch {
+      btn.textContent = '复制失败';
+    }
+    setTimeout(() => { btn.textContent = label; btn.classList.remove('done'); }, 1400);
+  });
+}
 
 // screenshot probes — a spinning turntable can't be screenshotted at a known angle
 window.__probe = () => ({ px: (W * cur.scale) / unitsPerPx, py: (H * cur.scale) / unitsPerPx, scale: cur.scale, tilt, rotY, spin });
 window.__debug = {
   scene, freeze: v => { paused = v; }, rot: v => { rotY = v; }, tilt: v => { tilt = v; },
+  open: (url) => openEntry(entries.find(e => e.url === url)),
 };

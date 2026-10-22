@@ -32,6 +32,21 @@ def tris(path):
         return None
 
 
+def thumb(d, stem, meta):
+    """The gallery card image. `thumb` in the sidecar wins (a folder can hold two
+    models); otherwise the shared thumb.webp, the hero render, or any hero render
+    left in the folder. 800px WebP keeps the whole grid under ~100KB, which the
+    1200px transparent PNGs cannot."""
+    if meta.get("thumb"):
+        return meta["thumb"]
+    for name in ("thumb.webp", "preview-hero.png", f"preview-{stem}-hero.png"):
+        if os.path.exists(os.path.join(d, name)):
+            return name
+    heroes = sorted(f for f in os.listdir(d)
+                    if f.startswith("preview-") and f.endswith("-hero.png"))
+    return heroes[0] if heroes else None
+
+
 def index():
     """One entry per .glb, one level down. An optional sidecar with the same stem
     carries the display title and any per-asset conversion fix the viewer applies."""
@@ -50,9 +65,11 @@ def index():
             if os.path.exists(sidecar):
                 with open(sidecar, encoding="utf-8") as f:
                     meta = json.load(f)
+            t = thumb(d, fn[:-4], meta)
             out.append({
                 "title": meta.get("title") or f"{folder}/{fn[:-4]}",
                 "url": f"{folder}/{fn}",
+                "thumb": f"{folder}/{t}" if t else None,
                 "tris": tris(os.path.join(d, fn)),
                 "fix": meta.get("fix") or {},
             })
