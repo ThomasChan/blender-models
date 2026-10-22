@@ -658,12 +658,16 @@ addEventListener('popstate', () => {
   else if (dialog.open) dialog.close();
 });
 
-// GitHub Pages is static: there is no /api/models, so fall back to the manifest
-// committed by build_manifest.py. Locally the live index stays authoritative, so
-// dropping a .glb in a folder still shows up without regenerating anything.
-const entries = await fetch('api/models')
-  .then(r => (r.ok ? r.json() : Promise.reject(new Error(`api/models ${r.status}`))))
-  .catch(() => fetch('models.json').then(r => r.json()));
+// GitHub Pages is static: /api/models does not exist, so ask for it only on a
+// loopback host -- otherwise every production visit starts with a guaranteed 404.
+// Locally the live index stays authoritative, so dropping a .glb in a folder shows
+// up without regenerating models.json first.
+const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+const entries = local
+  ? await fetch('api/models')
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`api/models ${r.status}`))))
+      .catch(() => fetch('models.json').then(r => r.json()))
+  : await fetch('models.json').then(r => r.json());
 countEl.textContent = entries.length ? `${entries.length} 个模型` : '还没有模型';
 
 if (entries.length) {
