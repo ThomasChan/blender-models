@@ -71,6 +71,7 @@ def index():
                 "url": f"{folder}/{fn}",
                 "thumb": f"{folder}/{t}" if t else None,
                 "tris": tris(os.path.join(d, fn)),
+                "bytes": os.path.getsize(os.path.join(d, fn)),
                 "fix": meta.get("fix") or {},
             })
     return out

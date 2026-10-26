@@ -49,6 +49,32 @@ https://chenjunhao.cn/blender-models/
 `thumb.webp`、`preview-hero.png` 或 `preview-<名字>-hero.png`。gallery 只加载
 800px 的 WebP；没有缩略图时才会退回 1200px 的原始渲染图，一张就是 1.3 MB。
 
+## 优化 GLB
+
+页面本身没有构建步骤；优化只跑在出模型的时候。第一次先 `npm install`
+（Playwright 的 Chromium 缺失时再跑 `npx playwright install chromium`）。
+
+```sh
+node scripts/optimize-models.mjs --level 0       # 纹理转 WebP，几何不动
+node scripts/optimize-models.mjs --level 1       # 再加 16bit 量化 + meshopt
+node scripts/visual-gate.mjs --candidate scripts/.optimize-out/level-0 --quick
+node scripts/visual-gate.mjs --candidate scripts/.optimize-out/level-0 --apply
+```
+
+Level 0 只换纹理编码，安全。Level 1（16 bit 量化 + meshopt）本轮把 5 个模型压到
+Level 0 的 18%–42%，整个库从 24.4 MB 降到 6.6 MB；但位置量化会让近共面的屏幕/
+背板在部分角度 z-fighting，所以必须逐模型过渲染闸门。本轮有 3 个没升：iMac 27 在
+0.79 rad/8° 少了一块高光楔形（942 px），MacBook Pro 在 1.40 rad/26° 屏幕被压成
+黑面（24,050 px），Mac mini 重压后反而从 895 KB 涨到 930 KB。闸门先独立解码候选文件和仓库里的当前文件，比对世界包围盒与三角数
+（meshopt 压缩的文件也能解），并拒绝比当前文件更大的候选；数字不一致直接判失败、
+不进入渲染；通过后再在固定角度各渲染一次逐像素比。`--apply` 只覆盖通过的模型，然后
+重跑 `build_manifest.py`。默认全量是（8 个基准方位角 + 3 个开发角度）× 2 个俯仰（那个
+1.40 rad 就是开发角度里抓到的 z-fighting），`--quick` 只跑 3 个开发角度，不能直接
+`--apply`。
+
+`weld` 和 `simplify` 是故意关掉的：前者会加重共面面的 z-fighting，后者会改变量过
+的几何。来源与许可见 `THIRD_PARTY_NOTICES.md`。
+
 ## macmini
 
 `macmini.glb` — 73,710 面，Apple 官方 USDZ 转来的。低多边形那版（362 面，
@@ -63,7 +89,7 @@ https://chenjunhao.cn/blender-models/
 （URL 里有两处连字符，少一个就是 404 —— 我第一版就写错了）。那份是 **M5** 的机器，
 这个文件夹里的是 M4，机身尺寸两代相同，所以这一台能像 iMac 那样直接转，不必手建：
 
-- `macbookpro.glb` — 55,063 三角面、2.2 MB，`build_macbookpro.py`。低多边形那版
+- `macbookpro.glb` — 55,063 三角面、1.9 MB，`build_macbookpro.py`。低多边形那版
   （1,530 面、80 KB）已经从模型列表和目录里删掉，`build_macbookpro_lowpoly.py` 还留着，
   要重建可以跑。
 
@@ -123,7 +149,7 @@ https://chenjunhao.cn/blender-models/
 
 ## imac
 
-`imac.glb` — 66,331 面、5.7 MB、31 个材质、**一个**物体（`imac`）。
+`imac.glb` — 66,331 面、0.8 MB、31 个材质、**一个**物体（`imac`）。
 和 macmini 同一条路：**Apple 官方 USDZ 转的，不是手建的**。
 `convert_imac.py` 一遍跑完连 `.blend` 带 `.glb` 带八张 `preview-*.png`，
 命令和取源文件的 curl 都在文件头上。
@@ -193,7 +219,7 @@ https://chenjunhao.cn/blender-models/
 
 ## macstudio
 
-`macstudio.glb` — 69,018 面、5.3 MB、13 个材质、一个物体（`macstudio`）。
+`macstudio.glb` — 69,018 面、0.7 MB、13 个材质、一个物体（`macstudio`）。
 和 macmini / imac 同一条路：**Apple 官方 USDZ 转的**。`convert_macstudio.py`
 一遍跑完连 `.blend` 带 `.glb` 带八张 `preview-*.png`，curl 在文件头上：
 
@@ -232,7 +258,7 @@ https://chenjunhao.cn/blender-models/
 
 ## macpro
 
-`macpro.glb` — 153,974 面、4.05 MB、22 个物体、9 个材质。**手建的，不是转的**：
+`macpro.glb` — 153,974 面、0.8 MB、22 个物体、9 个材质。**手建的，不是转的**：
 2026-10-19 实测抓了 `https://www.apple.com/mac-pro/` 的 HTML（1,054,770 字节），
 里面没有 `usdz`、也没有 `105/media` 引用。这不是猜的 —— 技能里记着 MacBook Pro
 那次「Mac 没有 USDZ」的前提就是错的，所以这一台先验过才开工。`build_macpro.py`
@@ -280,7 +306,7 @@ https://chenjunhao.cn/blender-models/
 
 ## imac27
 
-`imac27.glb` — 27,260 面、855 KB、11 个物体、8 个材质。**手建的，不是转的**：2026-10-20
+`imac27.glb` — 27,260 面、728 KB、11 个物体、8 个材质。**手建的，不是转的**：2026-10-20
 抓了 Apple 2020 年 27 英寸 iMac 产品页的存档（`apple2020_dec.html`，103,447 字节），
 里面只有 hero 和 nano-glass 两段 mp4 引用，没有 `.usdz` —— MacBook Pro 那次「Mac 没有
 USDZ」的教训在前，这台先验过才开工。`build_imac27.py` 从 bmesh 到 12 张图一遍跑完，
@@ -385,8 +411,8 @@ USDZ」的教训在前，这台先验过才开工。`build_imac27.py` 从 bmesh 
 
 ## magickeys
 
-`magic-keyboard.glb` — 79,901 面、5.24 MB、1 个物体、15 个材质；`magic-mouse.glb` —
-11,732 面、1.35 MB、1 个物体、12 个材质。两只都是**从 Apple 官方桌面套件的 USDZ 转的**，
+`magic-keyboard.glb` — 79,901 面、0.6 MB、1 个物体、15 个材质；`magic-mouse.glb` —
+11,732 面、0.2 MB、1 个物体、12 个材质。两只都是**从 Apple 官方桌面套件的 USDZ 转的**，
 不是手建：`imac/imac-silver.usdz` 里除了 iMac 还带一整套键鼠，`convert_magickeys.py`
 单独把这两件取出来。选组按**量出来的包络**（279.5 / 57.2 / 548.9 mm 宽），不按节点名——
 USDZ 里的名字是哈希，换一个颜色导出就会变。
@@ -421,13 +447,15 @@ USDZ 里的名字是哈希，换一个颜色导出就会变。
 预览页的 [`#agents`](https://chenjunhao.cn/blender-models/#agents) 有两段可以直接复制的指令：
 
 - **在前端项目里用模型**：让 agent 读 `models.json`（线上静态清单）或
-  `/api/models`（本地 `serve.py`），按 `url` 加载 GLB；清单是米制、Y-up。`macmini.glb`
-  用 meshopt 压缩，必须挂 `MeshoptDecoder`；金属材质必须给 `scene.environment`；
-  `fix` 非空的模型要按 `viewer.js` 的 `show()` 应用修正。GLB 不要改。
+  `/api/models`（本地 `serve.py`），按 `url` 加载 GLB；清单是米制、Y-up。GLB 可能
+  带 `EXT_meshopt_compression`（Level 1 优化后大多如此），加载时统一挂
+  `MeshoptDecoder`；金属材质必须给 `scene.environment`；`fix` 非空的模型要按
+  `viewer.js` 的 `show()` 应用修正。GLB 不要改。
 - **安装建模技能**：把 `skills/blender-highpoly/` 复制到 `~/.agents/skills/`
   （`~/.claude/skills/` 软链过去），然后按下面的出口闸门检查产物。
 
-`models.json` 和 `/api/models` 的字段一致：`title`、`url`、`thumb`、`tris`、`fix`。
+`models.json` 和 `/api/models` 的字段一致：`title`、`url`、`thumb`、`tris`、
+`bytes`、`fix`。
 
 ## skills
 
