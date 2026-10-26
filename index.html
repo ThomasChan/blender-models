@@ -40,7 +40,7 @@
       <dl class="stats">
         <div><dt>模型</dt><dd>8</dd></div>
         <div><dt>总面数</dt><dd>537<small>k</small></dd></div>
-        <div><dt>GLB 体积</dt><dd>24<small>MB</small></dd></div>
+        <div><dt>GLB 体积</dt><dd id="model-bytes">—</dd></div>
         <div><dt>许可</dt><dd>见<small>页脚</small></dd></div>
       </dl>
     </div>
@@ -121,10 +121,11 @@ python3 build_manifest.py   # 本地 serve.py 会实时扫描，线上需要这�
       <div class="snippet snippet-prompt">
         <div class="snippet-head"><span>prompt</span><button class="copy" data-copy>复制</button></div>
         <pre><code>在这个项目里用 https://chenjunhao.cn/blender-models/ 的模型。
-- 清单是 models.json，每项有 url / thumb / tris / fix；GLB 单位是米、Y 轴向上。
+- 清单是 models.json，每项有 url / thumb / tris / bytes / fix；GLB 单位是米、Y 轴向上。
 - Pages 返回 Access-Control-Allow-Origin: *，可以直接跨域 fetch。
-- 用 three.js 的 GLTFLoader；macmini.glb 用了 EXT_meshopt_compression 和 KHR_mesh_quantization，
-  必须 loader.setMeshoptDecoder(MeshoptDecoder)，否则几何体加载不出来。
+- 用 three.js 的 GLTFLoader；Level 1 优化后的 GLB 大多带 EXT_meshopt_compression 和
+  KHR_mesh_quantization，必须 loader.setMeshoptDecoder(MeshoptDecoder)，否则几何体加载不出来。
+  统一挂上 decoder 对未压缩的 GLB 也无害。
 - 金属材质没有环境贴图会发黑：给 scene.environment 一张 PMREM 过的环境。
 - renderer 用 THREE.NeutralToneMapping，toneMappingExposure = 1.25，和本页预览一致。
 - fix 非空的模型（目前只有 macmini）必须按 viewer.js 里 show() 的规则应用，否则会刻面、AO 错位。
@@ -152,7 +153,7 @@ loader.load('https://chenjunhao.cn/blender-models/imac27/imac27.glb', gltf =&gt;
       </div>
 
       <ul class="notes">
-        <li><strong>只有 Mac mini 需要 meshopt。</strong>其余模型是 Blender 直出的普通 GLB；统一挂上 decoder 不会有害。</li>
+        <li><strong>把 meshopt decoder 当成默认配置。</strong>Level 1 优化后的模型大多用它压缩；未压缩的 GLB 挂了也不会有害。具体看 <code>extensionsUsed</code> 里有没有 <code>EXT_meshopt_compression</code>。</li>
         <li><strong>环境贴图不是可选项。</strong>这批模型的壳体和支架是金属，像素值全部来自反射；没有 <code>scene.environment</code> 时它们会渲染成深灰。</li>
         <li><strong>别在 three.js 里重新归一化尺寸。</strong>GLB 已经是米制真实尺寸；本页的等比缩放只是为了转台好看，接进你的场景时按需要自己摆。</li>
       </ul>
@@ -248,6 +249,7 @@ ln -sfn ~/.agents/skills/blender-highpoly ~/.claude/skills/blender-highpoly</cod
         <h3>模型信息</h3>
         <dl class="detail-facts">
           <div><dt>格式</dt><dd>glTF 2.0 binary</dd></div>
+          <div><dt>大小</dt><dd id="detail-bytes">—</dd></div>
           <div><dt>单位</dt><dd>米 · Y 轴向上</dd></div>
           <div><dt>跨域</dt><dd>Access-Control-Allow-Origin: *</dd></div>
         </dl>

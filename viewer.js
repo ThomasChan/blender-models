@@ -469,7 +469,9 @@ function frame(now) {
     pivot.rotation.x = (tilt * Math.PI) / 180;
     device.rotation.y = rotY;
     device.scale.setScalar(cur.scale);
-    runAnim(dt);
+    // `paused` is the screenshot hook: a frame captured mid-loop is not
+    // comparable, so freezing the turntable freezes the baked animation too.
+    runAnim(paused ? 0 : dt);
 
     renderer.render(scene, camera);
   }
@@ -516,11 +518,13 @@ canvas.addEventListener('pointercancel', release);
 // --- the gallery ---------------------------------------------------------
 const grid = document.getElementById('grid');
 const countEl = document.getElementById('model-count');
+const bytesEl = document.getElementById('model-bytes');
 const dialog = document.getElementById('detail');
 const dClose = document.getElementById('detail-close');
 const dIndex = document.getElementById('detail-index');
 const dTitle = document.getElementById('detail-title');
 const dTris = document.getElementById('detail-tris');
+const dBytes = document.getElementById('detail-bytes');
 const dTags = document.getElementById('detail-tags');
 const dUrl = document.getElementById('detail-url');
 const dFix = document.getElementById('detail-fix');
@@ -584,6 +588,7 @@ function fillPanel(entry) {
   dIndex.textContent = `MODEL ${pad(i + 1)} / ${pad(entries.length)}`;
   dTitle.textContent = entry.title;
   dTris.textContent = entry.tris ? `${entry.tris.toLocaleString('en-US')} 三角面` : '—';
+  dBytes.textContent = entry.bytes ? `${(entry.bytes / 1048576).toFixed(2)} MB` : '—';
   dTags.replaceChildren();
   for (const tag of ['GLB', 'Y-up', '1 unit = 1 m', 'CORS *']) {
     const s = document.createElement('span');
@@ -669,6 +674,8 @@ const entries = local
       .catch(() => fetch('models.json').then(r => r.json()))
   : await fetch('models.json').then(r => r.json());
 countEl.textContent = entries.length ? `${entries.length} 个模型` : '还没有模型';
+const totalBytes = entries.reduce((n, e) => n + (e.bytes || 0), 0);
+if (bytesEl && totalBytes) bytesEl.textContent = `${(totalBytes / 1048576).toFixed(1)} MB`;
 
 if (entries.length) {
   const io = 'IntersectionObserver' in window
@@ -730,8 +737,14 @@ for (const btn of document.querySelectorAll('.copy')) {
 }
 
 // screenshot probes — a spinning turntable can't be screenshotted at a known angle
-window.__probe = () => ({ px: (W * cur.scale) / unitsPerPx, py: (H * cur.scale) / unitsPerPx, scale: cur.scale, tilt, rotY, spin });
+window.__probe = () => ({ px: (W * cur.scale) / unitsPerPx, py: (H * cur.scale) / unitsPerPx, scale: cur.scale, tilt, rotY, spin, ready: !!current });
 window.__debug = {
   scene, freeze: v => { paused = v; }, rot: v => { rotY = v; }, tilt: v => { tilt = v; },
+  // Pin the baked animation to an exact time; models without clips are a no-op.
+  anim: t => {
+    if (!anim) return;
+    anim.t = Math.max(0, Math.min(anim.dur, t));
+    runAnim(0);
+  },
   open: (url) => openEntry(entries.find(e => e.url === url)),
 };

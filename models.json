@@ -4,6 +4,7 @@
     "url": "imac/imac.glb",
     "thumb": "imac/thumb.webp",
     "tris": 66331,
+    "bytes": 822564,
     "fix": {}
   },
   {
@@ -11,6 +12,7 @@
     "url": "imac27/imac27.glb",
     "thumb": "imac27/thumb.webp",
     "tris": 27260,
+    "bytes": 745572,
     "fix": {}
   },
   {
@@ -18,6 +20,7 @@
     "url": "macbookpro/macbookpro.glb",
     "thumb": "macbookpro/thumb.webp",
     "tris": 55063,
+    "bytes": 2014632,
     "fix": {}
   },
   {
@@ -25,6 +28,7 @@
     "url": "macmini/macmini.glb",
     "thumb": "macmini/thumb.webp",
     "tris": 73710,
+    "bytes": 895460,
     "fix": {
       "crease": 60,
       "aoChannel": 0,
@@ -39,6 +43,7 @@
     "url": "macpro/macpro.glb",
     "thumb": "macpro/thumb.webp",
     "tris": 153974,
+    "bytes": 861440,
     "fix": {}
   },
   {
@@ -46,6 +51,7 @@
     "url": "macstudio/macstudio.glb",
     "thumb": "macstudio/thumb.webp",
     "tris": 69018,
+    "bytes": 696508,
     "fix": {}
   },
   {
@@ -53,6 +59,7 @@
     "url": "magickeys/magic-keyboard.glb",
     "thumb": "magickeys/kb-thumb.webp",
     "tris": 79901,
+    "bytes": 661420,
     "fix": {}
   },
   {
@@ -60,6 +67,7 @@
     "url": "magickeys/magic-mouse.glb",
     "thumb": "magickeys/ms-thumb.webp",
     "tris": 11732,
+    "bytes": 197080,
     "fix": {}
   }
 ]

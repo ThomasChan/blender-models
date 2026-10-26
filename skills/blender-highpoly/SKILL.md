@@ -12,7 +12,9 @@ can inspect — open the lid, look into a port, read the keycap legends, see the
 display lit — and that is what "high-precision" means here: measured
 dimensions, real cutouts, the details the eye actually uses to name the thing.
 Triangle count is a budget, not the goal. The silhouette rule is the floor, not
-the target.
+the target. Every detail the eye will use to name the object gets a row in
+`references/detail-inventory.md`; a detail that exists only in prose is not
+built.
 
 The order is the lesson this skill learned the hard way: a 362-triangle Mac
 mini passed every silhouette check and was still **"认不出是 macmini"**; the
@@ -71,14 +73,24 @@ contains:
 
 ```
 1. clean scene  (--factory-startup, then delete default cube/camera/light)
-2. REAL DIMENSIONS as constants, plain millimetres, converted once  ← craft.md
-3. geometry        (bmesh; one object per material class)
-4. materials
-5. studio rig      (world, lights, camera, render settings)
-6. render all preview angles
-7. export .glb     (explicitly selected objects only)
-8. save .blend     ← LAST. Saving earlier ships a file with no camera in it.
+2. detail inventory (every visible detail names its field)  ← detail-inventory.md
+3. REAL DIMENSIONS as constants, plain millimetres, converted once  ← craft.md
+4. geometry        (bmesh; one object per material class)
+5. materials
+6. studio rig      (world, lights, camera, render settings)
+7. render all preview angles
+8. export .glb     (explicitly selected objects only)
+9. save .blend     ← LAST. Saving earlier ships a file with no camera in it.
 ```
+
+Step 2 is not a mood board. Each row must name a real object, material,
+modifier, boolean or material value that carries the detail. If the row has no
+field, add the field or drop the detail; do not leave it as prose and hope the
+geometry pass remembers it.
+
+If the source is photographs rather than a vendor asset, read
+`references/reference-image.md` before the blockout: no millimetres without
+calibration, one IoU per view, and a missing view is UNEVALUATED, not a pass.
 
 ## Converting a vendor asset
 
@@ -450,11 +462,25 @@ actually carries the envelope (`--enclosure base`) restores the check. This is
 why "name every part" is worth doing at build time: the gate can only be pointed
 at a name.
 
+The verdict is three-state: `PASS` (exit 0), `FAIL` (exit 1), `UNEVALUATED`
+(exit 2). A missing preview, an unreadable GLB or any other requested check that
+could not run is UNEVALUATED, never PASS. Blender's `--python-exit-code 1` may
+collapse 2 to 1, so read the printed `VERDICT` line. An UNEVALUATED run is not
+a build you can report as done.
+
 It re-imports the exported `.glb` — measuring what ships, not what you intended
 — and fails loudly on tri budget, n-gon count, non-manifold edges, dimension
 drift, missing materials, a render that came out black, one with no highlight
-headroom left, and one with no highlight to speak of. Run it before you claim
-the model is done.
+headroom left, and one with no highlight to speak of. It also measures the same
+file a second time from its POSITION accessors, without bpy, and fails if the
+two paths disagree on dimensions or triangle count. Re-running the same bbox
+code would only confirm its own bug. Run it before you claim the model is done.
+
+The accessor path reads uncompressed GLBs. A meshopt-compressed export keeps
+no fallback data on disk, so that path cannot run and the verdict is
+UNEVALUATED. Do not wave it through: measure it with a meshopt-capable decoder
+(the repository's `scripts/visual-gate.mjs` does, before it renders) or gate an
+uncompressed export.
 
 Then **open every preview PNG and look at it.** Reading the numbers is not
 looking. If you changed geometry after rendering, the renders are stale. The
@@ -477,13 +503,35 @@ of the frame is pure white — a blown render reads as "bright and clean", not a
 a defect, and that is how a build shipped one while its author reported the
 exposure as correct. `craft.md` has the target numbers.
 
+### Assembly audit
+
+A clean bounding box is not a clean assembly. When the asset is more than one
+part, check the relationships the bbox cannot see:
+
+- **Floaters.** Every mesh must touch, overlap or be contained by another.
+  Sharing a bounding box is not contact.
+- **Interference.** Look for unintended overlap, and keep a named `hidden_ok`
+  allow-list for the overlaps that are deliberate (a liner inside a shell). An
+  unnamed exception is a defect.
+- **Contact / gap / contained.** Assert the intended relationship for each
+  pair. "Close enough" is not a relationship.
+- **AABB is a first pass only.** A rotated interface (an open lid at 100°) must
+  be measured in its local interface frame; a world-space AABB inflates until
+  the offender looks innocent. This is "measure in the space that ships" one
+  level down.
+
+Adapted from dsh-blender-plugin's `skills/blender-modeling/references/验收清单.md`
+(BSD-3-Clause); see `THIRD_PARTY_NOTICES.md` at the repository root.
+
 ## Reference
 
 | File | |
 |---|---|
 | `references/craft.md` | tri budgets, silhouette, bevels, shading, port sizing, studio setup |
+| `references/detail-inventory.md` | pre-geometry detail list; prose-only detail is not built |
+| `references/reference-image.md` | calibration, per-view IoU, and reference-photo traps |
 | `references/bpy.md` | verified 5.2 API/CLI facts, sorted by the version they changed in |
-| `scripts/check-model.py` | the export gate |
+| `scripts/check-model.py` | the export gate (PASS / FAIL / UNEVALUATED) |
 
 ## Common mistakes
 
